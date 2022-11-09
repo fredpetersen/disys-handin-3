@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package exclusion;
+option go_package = "https://github.com/fredpetersen/disys-handin-4;exclusion";
+
+
+service Exclusion {
+    rpc RequestAccess (Request) returns (Reply) {}
+}
+
+message Request {
+    int32 id = 1;
+}
+
+message Reply {
+    bool granted = 1;
+}
