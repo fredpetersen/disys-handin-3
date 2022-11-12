@@ -47,4 +47,4 @@ We attempted to automate the number of clients/peers being created and automatic
 
 Instead of spending a lot of time figuring out why this did not work, we instead decided to use a fixed number of peers at any given time (3) and where each program must be passed the --port flag of either 5000, 5001 or 5002, as described in [How to run](#how-to-run).
 
-We noted subsequently, that the project description refers to the [Serf package]()
+We noted subsequently, that the project description refers to the [Serf package](https://github.com/hashicorp/serf)
