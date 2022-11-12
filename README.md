@@ -10,7 +10,29 @@ Created by:
 
 ## How to run
 
+Run three terminals on the same computer. Run one of these commands in each terminal:
+
+```sh
+go run main.go --port 5000
+```
+
+```sh
+go run main.go --port 5001
+```
+
+```sh
+go run main.go --port 5002
+```
+
+Once all three clients/peers are running, in any terminal hit enter to request access.
+
 ## Expected results
+
+Requesting access will log to a `peer_x.log` where `x` is a portnumber from 5000 to 5002 (both included).
+
+What can be seen from the logs is that when a peer requests access, it will await responses from both other peers before accessing the restricted function. When access is granted, this can be seen as five `.` in the log.
+
+Simultaneously, it will listen to requests and give access once it is done with the restricted function itself. If port 5002 requests access while peer on port 5000 is currently accessing the restricted function, it can be seen that the access is not granted to other peers before peer on port 5000 is finished accessing the restricted function. More details can be found in the report.
 
 ## Notes
 

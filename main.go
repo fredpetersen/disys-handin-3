@@ -34,7 +34,7 @@ func main() {
 	fmt.Printf("Creating on port %v\n", *ownPort)
 
 	// enable logging to a file
-	f, err := os.OpenFile(fmt.Sprintf("peer_%v.log", *ownPort), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	f, err := os.OpenFile(fmt.Sprintf("peer_%v.log", *ownPort), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
 		log.Fatalf("error opening logfile: %v", err)
 	}
