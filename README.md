@@ -1,3 +1,16 @@
+## Test
+
+For this test schema, we check if the order of executing the request command makes any two process gain access simultaneously. If not, we mark this order as passed.
+
+Order of access|Passed
+---|---
+ABC|X
+ACB|X
+BAC|X
+BCA|X
+CAB|X
+CBA|X
+
 # disys-handin-4
 
 Mandatory handin 4 for Distributed System class at ITU 2022.

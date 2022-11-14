@@ -21,6 +21,7 @@ type peer struct {
 
 	port                int64
 	timestamp           int64
+	requestTimestamp	int64
 	currentlyRequesting bool
 	currentlyUsing      bool
 	clients             map[int64]exclusion.ExclusionClient
@@ -47,6 +48,8 @@ func main() {
 		clients:   make(map[int64]exclusion.ExclusionClient),
 		timestamp: 1,
 		ctx:       ctx,
+		currentlyUsing: false,
+		currentlyRequesting: false,
 	}
 
 	// Listen to port
@@ -54,8 +57,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to listen on port: %v", err)
 	}
-
-	// p.findAvailablePort()
 
 	grpcServer := grpc.NewServer()
 	exclusion.RegisterExclusionServer(grpcServer, p)
@@ -68,7 +69,6 @@ func main() {
 	}()
 
 	// Connect to peers
-
 	for i := 0; i < 3; i++ {
 		port := int64(5000 + i)
 
@@ -107,16 +107,23 @@ func (p *peer) readInput() {
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		// read input (clicking enter in terminal)
+
+		// mark myself as currently requesting access
 		p.currentlyRequesting = true
+		p.requestTimestamp = p.timestamp
+		log.Printf("%v is now currently requesting, and will say NO to incoming requests", p.port)
+
+		// request each other peer for access to the restricted function
 		for peerId, peer := range p.clients {
 			log.Printf("L(%v): %v is requesting %v\n", p.timestamp, p.port, peerId)
 			reply, err := peer.RequestAccess(p.ctx, &exclusion.Request{
 				Port:      p.port,
-				Timestamp: p.timestamp, // TODO
+				Timestamp: p.timestamp,
 			})
+			
 
 			if err != nil {
-				log.Printf("L(%v): FATAL ERROR: %s", p.timestamp, err.Error())
+				log.Fatalf("L(%v): FATAL ERROR: %s", p.timestamp, err.Error())
 				// Exit system as this is a fatal error
 			}
 
@@ -139,6 +146,7 @@ func (p *peer) readInput() {
 }
 
 func restrictedFunc(id int64) {
+	// Pretend restricting function
 	log.Printf("RESTRICTED ACCESS BY %v\n", id)
 	for i := 0; i < 5; i++ {
 		log.Print(".")
@@ -149,32 +157,38 @@ func restrictedFunc(id int64) {
 }
 
 func (p *peer) RequestAccess(ctx context.Context, req *exclusion.Request) (*exclusion.Reply, error) {
-	// req wants access to critical section
-	p.timestamp = Max(req.Timestamp, p.timestamp+1)
 	log.Printf("L(%v): %v requests %v access to critical section\n", p.timestamp, req.Port, p.port)
 
 	// if p is using, wait until done
 	for p.currentlyUsing {
-		time.Sleep(time.Second) // Making sure it doesn't use 100% CPU
+		time.Sleep(200 * time.Millisecond) // Making sure it doesn't use 100% CPU
 	} // Blocking
 
 	// if p is requesting, compare timestamps:
 	// Lower timestamp is granted access
 	// If timestamp is equal, lower portnumber gets access (tiebreaker)
 
-	if p.currentlyRequesting {
-		for req.Timestamp >= p.timestamp {
-			if req.Timestamp == p.timestamp {
+		for p.currentlyRequesting {
+			if req.Timestamp < p.requestTimestamp {
+				log.Printf("L(%v): %v has an earlier timestamp for their request, and is therefore granted access\n", p.timestamp, req.Port,)
+			}
+			if req.Timestamp == p.requestTimestamp {
 				if req.Port < p.port {
 					log.Printf("L(%v): %v has the same timestamp as %v but a lower portnumber\n", p.timestamp, req.Port, p.port)
 					break
 				}
+			} else {
+				time.Sleep(200 * time.Millisecond)
+				// Blocking requester from gaining access, untill this peer is done.
 			}
 		}
-	}
+
+	// req wants access to critical section
+	p.timestamp = Max(req.Timestamp, p.timestamp) + 1
 
 	// If the above does not hold, wait until it does, otherwise send reply.
 	log.Printf("L(%v): %v gains access to critical section by %v\n", p.timestamp, req.Port, p.port)
+	p.timestamp++
 	return &exclusion.Reply{
 		Port: p.port,
 	}, nil
